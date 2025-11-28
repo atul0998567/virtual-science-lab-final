@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Acid-Base Indicators Experiment</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+    <header class="main-header">
+        <div class="container">
+            <a href="index.html" class="back-button">← Home</a>
+            <h1>Acid-Base Indicators</h1>
+            <p>Observe color changes and identify acid, base or neutral.</p>
+        </div>
+    </header>
+
+    <main class="container experiment-container">
+        <!-- Left: workspace -->
+        <section class="lab-workspace-panel">
+            <h2>Virtual Lab Workspace</h2>
+
+            <div class="lab-tools-palette">
+                <h4>Drag & Drop Tools</h4>
+                <div class="tool-item" draggable="true" data-tool="beaker">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3004/3004458.png" alt="Glass" />
+                    <span>Glass</span>
+                </div>
+                <div class="tool-item" draggable="true" data-tool="acid">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3004/3004450.png" alt="Acid" />
+                    <span>Acid</span>
+                </div>
+                <div class="tool-item" draggable="true" data-tool="base">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3004/3004444.png" alt="Base" />
+                    <span>Base</span>
+                </div>
+                <div class="tool-item" draggable="true" data-tool="indicator">
+                    <img src="https://cdn-icons-png.flaticon.com/512/2920/2920803.png" alt="Litmus Paper" />
+                    <span>Litmus Paper</span>
+                </div>
+            </div>
+
+            <div id="workspace" class="workspace-area">
+                <p class="drag-hint">Drag the beaker and solutions here.</p>
+                <div id="beaker-visual" class="hidden"
+                    style="width:80px;height:120px;border-radius:8px;border:2px solid #555;overflow:hidden;display:flex;align-items:flex-end;justify-content:center;background:#eee;">
+                    <div id="liquid" style="width:100%;height:60%;background:#f0f0f0;"></div>
+                </div>
+                <button id="reset-experiment" class="btn secondary-btn reset-btn">Reset Experiment</button>
+            </div>
+        </section>
+
+        <!-- Right: info panel -->
+        <section class="info-panel">
+            <div class="panel-section">
+                <h2>Instructions</h2>
+                <div class="instructions-box">
+                    <p id="instruction-text">Step 1: Drag a beaker into the workspace.</p>
+                    <div class="instruction-navigation">
+                        <button id="prev-step" class="btn secondary-btn" disabled>Previous</button>
+                        <button id="next-step" class="btn primary-btn">Next</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h2>Output & Observations</h2>
+                <div class="output-area">
+                    <p>Solution type: <span id="solution-type">None</span></p>
+                    <p>Indicator color: <span id="indicator-color">None</span></p>
+
+                    <div class="observation-log">
+                        <h4>Observations</h4>
+                        <ul id="obs-list"></ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-section collapsible-panel">
+                <h2 class="collapsible-header">Theory <span>▼</span></h2>
+                <div class="collapsible-content">
+                    <p>Indicators change color depending on whether the solution is acidic or basic.</p>
+                    <p>For example, phenolphthalein is colorless in acid and pink in base.</p>
+                </div>
+            </div>
+
+            <div class="panel-section collapsible-panel">
+                <h2 class="collapsible-header">Aim <span>▼</span></h2>
+                <div class="collapsible-content">
+                    <p>To distinguish acidic and basic solutions using an indicator.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="main-footer">
+        <div class="container">
+            <p>&copy; 2025 Virtual Science Lab. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Simple step logic + drag/drop
+
+        let currentStep = 0;
+        const steps = [
+            "Step 1: Drag a beaker into the workspace.",
+            "Step 2: Add acid or base to the beaker.",
+            "Step 3: Add indicator and observe the color."
+        ];
+
+        const instructionText = document.getElementById("instruction-text");
+        const prevBtn = document.getElementById("prev-step");
+        const nextBtn = document.getElementById("next-step");
+        const workspace = document.getElementById("workspace");
+        const beakerVisual = document.getElementById("beaker-visual");
+        const liquid = document.getElementById("liquid");
+        const solutionTypeSpan = document.getElementById("solution-type");
+        const indicatorColorSpan = document.getElementById("indicator-color");
+        const obsList = document.getElementById("obs-list");
+        const resetBtn = document.getElementById("reset-experiment");
+
+        let hasBeaker = false;
+        let solutionType = null; // "acid" or "base"
+        let indicatorAdded = false;
+
+        function resetExperiment() {
+            hasBeaker = false;
+            solutionType = null;
+            indicatorAdded = false;
+            beakerVisual.classList.add("hidden");
+            liquid.style.backgroundColor = "#f0f0f0";
+            solutionTypeSpan.textContent = "None";
+            indicatorColorSpan.textContent = "None";
+            obsList.innerHTML = "";
+            currentStep = 0;
+            setInstruction();
+            showNote("Experiment reset.");
+        }
+
+        document.getElementById("reset-experiment").addEventListener("click", resetExperiment);
+
+        function setInstruction() {
+            instructionText.textContent = steps[currentStep];
+            prevBtn.disabled = currentStep === 0;
+            nextBtn.disabled = currentStep === steps.length - 1;
+        }
+
+        prevBtn.onclick = () => {
+            if (currentStep > 0) {
+                currentStep--;
+                setInstruction();
+            }
+        };
+
+        nextBtn.onclick = () => {
+            // Basic validation
+            if (currentStep === 0 && !hasBeaker) {
+                showNote("Add a beaker first.");
+                return;
+            }
+            if (currentStep === 1 && !solutionType) {
+                showNote("Add acid or base to the beaker before going ahead.");
+                return;
+            }
+            if (currentStep === 2 && !indicatorAdded) {
+                showNote("Add indicator to see the color change.");
+                return;
+            }
+            if (currentStep < steps.length - 1) {
+                currentStep++;
+                setInstruction();
+            }
+        };
+
+        function showNote(msg, type = "info") {
+            const div = document.createElement("div");
+            div.className = "notification notification-" + (type === "error" ? "error" : "info");
+            div.textContent = msg;
+            document.body.appendChild(div);
+            setTimeout(() => div.remove(), 2500);
+        }
+
+        function addObs(text) {
+            const li = document.createElement("li");
+            li.textContent = text;
+            obsList.prepend(li);
+        }
+
+        // Drag-and-drop
+        let draggedTool = null;
+
+        document.querySelectorAll(".tool-item").forEach(tool => {
+            tool.addEventListener("dragstart", e => {
+                draggedTool = e.target.closest(".tool-item");
+            });
+            tool.addEventListener("dragend", () => {
+                draggedTool = null;
+            });
+        });
+
+        workspace.addEventListener("dragover", e => {
+            e.preventDefault();
+            workspace.classList.add("drag-over");
+        });
+
+        workspace.addEventListener("dragleave", () => {
+            workspace.classList.remove("drag-over");
+        });
+
+        workspace.addEventListener("drop", e => {
+            e.preventDefault();
+            workspace.classList.remove("drag-over");
+            if (!draggedTool) return;
+
+            const tool = draggedTool.getAttribute("data-tool");
+            if (tool === "beaker") {
+                if (hasBeaker) {
+                    showNote("Beaker is already placed.");
+                    return;
+                }
+                hasBeaker = true;
+                beakerVisual.classList.remove("hidden");
+                addObs("Beaker placed in workspace.");
+            } else if (tool === "acid" || tool === "base") {
+                if (!hasBeaker) {
+                    showNote("Place a beaker first.", "error");
+                    return;
+                }
+                solutionType = tool;
+                solutionTypeSpan.textContent = tool === "acid" ? "Acidic" : "Basic";
+                liquid.style.backgroundColor = tool === "acid" ? "#ffb3b3" : "#c8f7c5";
+                addObs((tool === "acid" ? "Acid" : "Base") + " added to beaker.");
+            } else if (tool === "indicator") {
+                if (!solutionType) {
+                    showNote("Add acid or base before indicator.", "error");
+                    return;
+                }
+                indicatorAdded = true;
+                let color;
+                if (solutionType === "acid") {
+                    color = "Colorless / faint";
+                    liquid.style.backgroundColor = "#f0f0f0"; // Phenolphthalein in acid
+                } else {
+                    color = "Pink (basic)";
+                    liquid.style.backgroundColor = "#ffc0cb"; // Phenolphthalein in base
+                }
+                indicatorColorSpan.textContent = color;
+                addObs("Indicator added. Color: " + color);
+            }
+        });
+
+        // Collapsible panels
+        document.querySelectorAll(".collapsible-header").forEach(h => {
+            h.addEventListener("click", () => {
+                h.classList.toggle("active");
+                const content = h.nextElementSibling;
+                content.style.display = content.style.display === "block" ? "none" : "block";
+            });
+        });
+
+        // Init
+        setInstruction();
+    </script>
+</body>
+
+</html>
